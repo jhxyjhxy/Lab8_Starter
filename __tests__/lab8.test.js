@@ -55,16 +55,18 @@ describe('Basic user flow for Website', () => {
     
     // Grab the shadowRoot of that element (it's a property), then query a button from that shadowRoot.
     //const shadow = await page.evaluate(firstItem.shadowRoot);
-    const shadow = await page.evaluate(() => {
-      return firstItem.shadowRoot;
-    });
-    console.log("shadow: " + shadow); // undefined
-    const button = shadow.querySelector('button');
+    // const shadow = await page.evaluate(() => {
+    //   return firstItem.shadowRoot;
+    // });
+    // console.log("shadow: " + shadow); // undefined
+    let shadow = await firstItem.getProperty('shadowRoot');
+    let button = await shadow.$('button');
     // Once you have the button, you can click it and check the innerText property of the button.
-    await page.click(button);
-    const text = await button.innerText;
+    await button.click();
+    let text = await button.getProperty('innerText');
     // Once you have the innerText property, use innerText.jsonValue() to get the text value of it
-    const textVal = await text.jsonValue();
+    textVal = await text.jsonValue();
+    expect(textVal).toBe("Remove from Cart");
   }, 2500);
 
   // Check to make sure that after clicking "Add to Cart" on every <product-item> that the Cart
@@ -75,21 +77,21 @@ describe('Basic user flow for Website', () => {
     // Query select all of the <product-item> elements, then for every single product element
     const prodItem = await page.$$('product-item');
 
-    for (let i = 0; i < prodItem.length; i++) {
+    for (let i = 1; i < prodItem.length; i++) {
       // get the shadowRoot and query select the button inside, and click on it.
-      const shadow = await page.evaluate(() => {
-        return prodItem[i].shadowRoot;
-      });
+      // const shadow = await page.evaluate(() => {
+      //   return prodItem[i].shadowRoot;
+      // });
+      const shadow = await prodItem[i].getProperty('shadowRoot');
       //shadow = prodItem[i].shadowRoot;
-      button = shadow.querySelector('button');
-      await page.click(button);
-
-      // Check to see if the innerText of #cart-count is 20
-      const cart = document.querySelector('#cart-count');
-      const cartCount = cart.innerText;
-
-      expect(cartCount).toBe(20);
+      const button = await shadow.$('button');
+      await button.click();
     }
+      // Check to see if the innerText of #cart-count is 20
+      const cart = await page.waitForSelector('#cart-count');
+      const cartCount = await cart.getProperty('innerText');
+      const cartVal = await cartCount.jsonValue();
+      expect(cartVal).toBe('20');
 
   }, 10000);
 
@@ -98,24 +100,27 @@ describe('Basic user flow for Website', () => {
     console.log('Checking number of items in cart on screen after reload...');
     // TODO - Step 4
     // Reload the page, then select all of the <product-item> elements, and check every
-    // element to make sure that all of their buttons say "Remove from Cart".
     await page.reload();
     prodItem = await page.$$('product-item');
     let textCorrect = true;
-
+    // element to make sure that all of their buttons say "Remove from Cart".
     for (let i = 0; i < prodItem.length; i++) {
-      shadow = prodItem[i].shadowRoot;
-      button = shadow.querySelector('button');
-
+      let shadow = await prodItem[i].getProperty('shadowRoot');
+      let button = await shadow.$('button');
       // getting the innerText
-      const text = button.innerText;
+      let innerText = await button.getProperty('innerText');
+      let textVal = await innerText.jsonValue();
+      expect(textVal).toBe("Remove from Cart");
+
       // if doesn't have correct text, set textCorrect flag to false
-      if (text != "Remove from Cart") { textCorrect = false; }
+      // if (textVal != "Remove from Cart") { textCorrect = false; }
+      // expect(textCorrect).toBe(true);
     }
-
-    expect(textCorrect).toBe(true);
-
     // Also check to make sure that #cart-count is still 20
+    const cart = await page.waitForSelector('#cart-count');
+    const cartCount = await cart.getProperty('innerText');
+    const cartVal = await cartCount.jsonValue();
+    expect(cartVal).toBe('20');
   }, 10000);
 
   // Check to make sure that the cart in localStorage is what you expect
@@ -149,17 +154,20 @@ describe('Basic user flow for Website', () => {
 
     // click on each button
     for (let i = 0; i < prodItem.length; i++) {
-      let shadow = prodItem[i].shadowRoot;
-      let button = shadow.querySelector('button');
-
-      await page.click(button);
+      let shadow = await prodItem[i].getProperty('shadowRoot');
+      let button = await shadow.$('button');
+      await button.click();
     }
 
     // Once you have, check to make sure that #cart-count is now 0
-    if (typeof window !== 'undefined') {
-      const cart = localStorage.getItem("cart");
-      expect(cart.innerText).toBe(0);
-    }
+    // if (typeof window !== 'undefined') {
+    //   const cart = localStorage.getItem("cart");
+    //   expect(cart.innerText).toBe(0);
+    // }
+    const cart = await page.waitForSelector('#cart-count');
+    const cartCount = await cart.getProperty('innerText');
+    const cartVal = await cartCount.jsonValue();
+    expect(cartVal).toBe('0');
 
   }, 10000);
 
@@ -174,22 +182,28 @@ describe('Basic user flow for Website', () => {
     const prodItem = await page.$$('product-item');
 
     for (let i = 0; i < prodItem.length; i++) {
-      const shadow = prodItem[i].shadowRoot;
-      const button = shadow.querySelector('button');
-
+      let shadow = await prodItem[i].getProperty('shadowRoot');
+      let button = await shadow.$('button');
       // getting the innerText
-      const text = button.innerText;
+      let innerText = await button.getProperty('innerText');
+      let textVal = await innerText.jsonValue();
+      expect(textVal).toBe("Add to Cart");
+
       // if doesn't have correct text, set textCorrect flag to false
-      if (text != "Remove from Cart") { textCorrect = false; }
+      // if (text != "Remove from Cart") { textCorrect = false; }
     }
-    expect(textCorrect).toBe(true);
+    // expect(textCorrect).toBe(true);
 
     // Also check to make sure that #cart-count is still 0
-    if (typeof window !== 'undefined') {
-      const cart = localStorage.getItem("cart");
+    // if (typeof window !== 'undefined') {
+    //   const cart = localStorage.getItem("cart");
 
-      expect(cart.innerText).toBe(0);
-    }
+    //   expect(cart.innerText).toBe(0);
+    // }
+    const cart = await page.waitForSelector('#cart-count');
+    const cartCount = await cart.getProperty('innerText');
+    const cartVal = await cartCount.jsonValue();
+    expect(cartVal).toBe('0');
   }, 10000);
 
   // Checking to make sure that localStorage for the cart is as we'd expect for the
